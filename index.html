@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <!-- dev-redirect: opened by double-click from disk, jump straight to the single-file build (removed by build-play) -->
+  <script>if (location.protocol === 'file:') location.replace('./play/SakuraRush.html');</script>
+  <!-- /dev-redirect -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#5bc0ff" />
+  <title>Sakura Rush</title>
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body class="calm-effects" data-view="title">
+  <div id="app"></div>
+  <div id="vignette"></div>
+  <div id="flash"></div>
+  <div id="dmg-layer"></div>
+
+  <!-- ============================================================ battle HUD -->
+  <div id="hud" class="hidden">
+    <div id="xpbar"><div id="xpfill"></div><span id="lvl">1</span></div>
+    <div id="hud-row">
+      <div class="hud-pill hp-pill"><i class="ico-heart" aria-hidden="true"></i><div id="hp"><div id="hpfill"></div><span id="hptext">100 / 100</span></div></div>
+      <div class="hud-clock"><div id="timer">10:00</div><div id="wave">Волна 1</div><div id="run-progress"><i></i></div></div>
+      <div class="hud-pill loot-pill"><span class="coin-ico" aria-hidden="true"></span><b id="run-coins">0</b><span class="skull-ico" aria-hidden="true">☠</span><b id="kills">0</b></div>
+    </div>
+    <div id="boss" class="hidden"><span>👹 Они-сёгун</span><div id="bossfill"></div></div>
+    <div id="buffs"></div>
+    <div id="hud-relics" aria-label="Артефакты забега"></div>
+    <div id="hud-actions"><button id="soundbtn" aria-pressed="true" aria-label="Звук">🔊</button><button id="pausebtn" aria-label="Пауза">❚❚</button></div>
+    <!-- one bottom-left column, so the dash meter always sits above however many rows of skills -->
+    <div id="hud-dock">
+      <div id="dash-meter"><span id="dashlabel">Рывок</span><div><i id="dashfill"></i></div></div>
+      <div id="skills"></div>
+    </div>
+    <div id="hint">WASD — бег · Пробел — рывок · атаки сами!</div>
+    <div id="chest-pointer" class="hidden"><i>➤</i><span>0 м</span></div>
+    <span id="aim-status" hidden></span><span id="quality-status" hidden></span>
+  </div>
+  <div id="banner"></div>
+  <div id="toasts"></div>
+
+  <!-- ============================================================ main menu -->
+  <div id="title" class="screen lobby">
+    <header class="top-bar">
+      <div class="logo"><span class="logo-main">Sakura Rush</span><span class="logo-sub">Битва за цветущую долину</span></div>
+      <div class="top-right">
+        <button class="wallet" data-lobby-tab="shop" aria-label="Монеты, открыть магазин"><span class="coin-ico" aria-hidden="true"></span><b data-wallet>0</b><span class="plus">+</span></button>
+        <button class="round-btn" data-open-settings aria-label="Настройки">⚙</button>
+      </div>
+    </header>
+
+    <section id="lobby-play" class="lobby-view">
+      <div class="play-grid">
+        <aside class="panel mode-panel">
+          <h2 class="panel-title">Режим</h2>
+          <div class="mode-cards">
+            <button class="mode-card story" data-mode="story"><span class="mode-ico">🗺️</span><b>Приключение</b><small>10 глав по 10 минут</small></button>
+            <button class="mode-card endless" data-mode="endless"><span class="mode-ico">🏆</span><b>Бесконечная ночь</b><small id="endless-best">Рекорд: —</small></button>
+          </div>
+          <div id="chapter-list" class="chapter-list" aria-label="Главы"></div>
+          <div class="chapter-info"><b id="chapter-name">Сакуровая долина</b><p id="chapter-subtitle"></p><small id="chapter-difficulty"></small></div>
+        </aside>
+        <div class="center-col">
+          <div class="stage" aria-hidden="true"><div class="stage-name"><b id="class-name">Маг</b><span id="class-level"></span></div></div>
+          <div class="play-bar">
+            <div id="boost-bar" class="boost-bar" aria-label="Бусты на забег"></div>
+            <div id="loading">Загрузка… <span id="loadpct">0%</span></div>
+            <button id="startbtn" class="btn btn-play hidden">ИГРАТЬ</button>
+            <p id="title-record"></p>
+          </div>
+        </div>
+        <aside class="panel class-panel">
+          <h2 class="panel-title">Герой</h2>
+          <div id="loadout-options" class="class-list" role="group" aria-label="Выбор героя"></div>
+          <p id="loadout-description" aria-live="polite"></p>
+          <div id="permanent-bonuses"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="lobby-talents" class="lobby-view hidden">
+      <div class="talent-layout">
+        <div class="panel talent-board">
+          <div class="adv-head">
+            <div id="branch-chips" class="branch-chips" aria-label="Ветки"></div>
+            <div class="adv-zoom"><button id="adv-zoom-out" aria-label="Отдалить">−</button><button id="adv-zoom-in" aria-label="Приблизить">+</button></div>
+          </div>
+          <div id="talent-scroll" class="adv-viewport" tabindex="0" aria-label="Карта талантов: тяни, чтобы листать"><div id="talent-map" class="adv-map"></div></div>
+          <p class="adv-legend"><span class="f task"></span>улучшение <span class="f goal"></span>развилка <span class="f challenge"></span>испытание</p>
+        </div>
+        <aside class="panel talent-detail">
+          <div id="talent-glyph" class="talent-glyph"></div>
+          <h2 id="talent-name"></h2>
+          <div id="talent-branch"></div>
+          <div id="talent-rank"></div>
+          <p id="talent-description"></p>
+          <small id="talent-requirement"></small>
+          <button id="buy-talent" class="btn btn-green">Улучшить</button>
+          <small id="talent-wallet-note"></small>
+          <div class="tree-progress"><span>Дерево изучено</span><div><i id="tree-progress"></i></div><small id="tree-progress-text"></small></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="lobby-forge" class="lobby-view hidden">
+      <div class="forge-layout">
+        <div class="panel forge-list">
+          <h2 class="panel-title">Кузница</h2>
+          <p class="panel-sub">Прокачивай оружие класса и выбирай его облик. У каждого облика своё свойство.</p>
+          <div id="weapon-list" class="weapon-list"></div>
+        </div>
+        <div class="shop-center">
+          <div class="stage forge-stage" aria-hidden="true"></div>
+        </div>
+        <aside class="panel weapon-detail">
+          <div id="weapon-art" class="weapon-art"></div>
+          <h2 id="weapon-name"></h2>
+          <div id="weapon-class"></div>
+          <p id="weapon-perk"></p>
+          <div class="weapon-level"><span>Уровень оружия</span><b id="weapon-level-text"></b><div id="weapon-pips" class="weapon-pips"></div><small id="weapon-level-bonus"></small></div>
+          <button id="weapon-upgrade" class="btn btn-blue">Прокачать</button>
+          <button id="weapon-action" class="btn btn-green">Выбрать</button>
+          <small id="weapon-note"></small>
+        </aside>
+      </div>
+    </section>
+
+    <section id="lobby-ranking" class="lobby-view hidden">
+      <div class="ranking-layout">
+        <div class="panel ranking-panel">
+          <div class="rank-tabs"><button class="active" data-board="time">⏱ Дольше всех</button><button data-board="kills">⚔ Больше всех ёкаев</button></div>
+          <ol id="ranking-list" class="ranking-list"></ol>
+          <p id="ranking-note"></p>
+          <button id="ranking-auth" class="btn btn-blue hidden">Войти и попасть в рейтинг</button>
+        </div>
+        <aside class="panel my-records">
+          <h2 class="panel-title">Мои рекорды</h2>
+          <div id="my-best" class="my-best"></div>
+          <ol id="my-records" class="my-records-list"></ol>
+          <button class="btn btn-yellow" data-play-endless>Играть в бесконечный режим</button>
+        </aside>
+      </div>
+    </section>
+
+    <section id="lobby-shop" class="lobby-view hidden">
+      <div class="shop-layout">
+        <div class="panel shop-skins">
+          <h2 class="panel-title">Персонажи</h2>
+          <p class="panel-sub">Любой класс может стать любым персонажем. Оружие и техники остаются свои.</p>
+          <div id="skin-list" class="skin-grid"></div>
+        </div>
+        <div class="shop-center">
+          <div class="stage shop-stage" aria-hidden="true"></div>
+          <div class="skin-detail panel"><b id="skin-name"></b><p id="skin-description"></p><button id="skin-action" class="btn btn-green"></button><small id="skin-note"></small></div>
+        </div>
+        <div class="panel shop-store">
+          <h2 class="panel-title">Монеты, пропуск и оружие</h2>
+          <div id="product-list" class="product-list"></div>
+          <div class="shop-foot">
+            <button id="restore-purchases" class="btn btn-ghost btn-small">↻ Восстановить покупки</button>
+            <p id="shop-note" class="shop-note"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <nav class="tab-bar" role="tablist" aria-label="Меню">
+      <button class="active" data-lobby-tab="play" role="tab" aria-selected="true"><span>⚔️</span>Играть</button>
+      <button data-lobby-tab="talents" role="tab" aria-selected="false"><span>🌳</span>Таланты<i class="badge hidden" id="talent-badge">!</i></button>
+      <button data-lobby-tab="forge" role="tab" aria-selected="false"><span>⚒️</span>Кузница</button>
+      <button data-lobby-tab="ranking" role="tab" aria-selected="false"><span>🏆</span>Рейтинг</button>
+      <button data-lobby-tab="shop" role="tab" aria-selected="false"><span>🛍️</span>Магазин</button>
+    </nav>
+    <div id="lobby-message" role="status" aria-live="polite"></div>
+  </div>
+
+  <!-- ============================================================ level up -->
+  <div id="levelup" class="screen hidden">
+    <div class="levelup-head"><div class="lu-title">Новый уровень!</div><div class="lu-sub" id="levelup-path">Выбери одну карточку</div></div>
+    <div id="cards"></div>
+    <div class="levelup-actions">
+      <button id="rerollbtn" class="btn btn-blue">🔄 Другие карточки <b id="reroll-count">1</b></button>
+      <button id="reroll-ad" class="btn btn-yellow hidden">🎬 Ещё варианты за рекламу</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ chest artifacts -->
+  <div id="relicpick" class="screen hidden">
+    <div class="levelup-head"><div class="lu-title">Сундук открыт!</div><div class="lu-sub">Выбери артефакт. Он действует до конца забега</div></div>
+    <div id="relic-cards"></div>
+    <div class="levelup-actions">
+      <button id="relic-all" class="btn btn-yellow hidden">🎬 Забрать все за рекламу</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ pause -->
+  <div id="pause" class="screen hidden">
+    <div class="panel modal">
+      <div class="lu-title">Пауза</div>
+      <p id="pause-message">Отдохни немного. Ёкаи подождут!</p>
+      <div class="menu">
+        <button class="btn btn-green" id="resumebtn">Продолжить</button>
+        <button class="btn btn-blue" data-open-settings>Настройки</button>
+        <button class="btn btn-red" id="leave-run">Выйти в меню · монеты сохранятся</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ settings -->
+  <div id="settings" class="screen hidden" role="dialog" aria-labelledby="settings-title">
+    <div class="panel modal settings-panel">
+      <div class="lu-title" id="settings-title">Настройки</div>
+      <label class="row"><span>Громкость</span><span class="ctl"><input id="set-volume" type="range" min="0" max="100" step="5"><output id="volume-value">70%</output></span></label>
+      <label class="row"><span>Графика</span><select id="set-quality" aria-label="Качество графики"><option value="auto">Автоматически</option><option value="0">Красиво</option><option value="1">Баланс</option><option value="2">Быстро</option></select></label>
+      <label class="row"><span>Размер кнопок</span><select id="set-ui"><option value="0.85">Маленькие</option><option value="1">Обычные</option><option value="1.15">Большие</option></select></label>
+      <label class="row"><span>Камера</span><span class="ctl"><input id="set-zoom" type="range" min="85" max="130" value="105" step="5"><output id="zoom-value">105%</output></span></label>
+      <label class="row check"><span>Мягкие эффекты<small>без ярких вспышек</small></span><input id="effects-toggle" type="checkbox" checked></label>
+      <label class="row check"><span>Тряска камеры</span><input id="set-shake" type="checkbox"></label>
+      <label class="row check"><span>Цифры урона</span><input id="set-numbers" type="checkbox" checked></label>
+      <label class="row check"><span>Подсказки</span><input id="set-hints" type="checkbox" checked></label>
+      <button class="btn btn-green" id="settings-close">Готово</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ second chance -->
+  <div id="revive" class="screen hidden">
+    <div class="panel modal revive-panel">
+      <div class="revive-heart">💔</div>
+      <div class="lu-title">Ой! Герой упал</div>
+      <p>Хочешь продолжить с того же места?</p>
+      <div class="menu">
+        <button class="btn btn-yellow" id="revive-ad">🎬 Встать за рекламу</button>
+        <button class="btn btn-blue" id="revive-coins">Встать за <b id="revive-price">60</b> <span class="coin-ico"></span></button>
+        <button class="btn btn-ghost" id="revive-skip">Нет, закончить</button>
+      </div>
+      <div class="revive-timer"><i id="revive-timer"></i></div>
+    </div>
+  </div>
+
+  <!-- ============================================================ purchase confirm / receipt -->
+  <div id="confirm" class="screen hidden" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <div class="panel modal confirm-panel">
+      <div id="confirm-art" class="confirm-art"></div>
+      <div class="lu-title" id="confirm-title"></div>
+      <p id="confirm-text"></p>
+      <div id="confirm-price" class="confirm-price"></div>
+      <div class="menu">
+        <button class="btn btn-green" id="confirm-ok"></button>
+        <button class="btn btn-ghost" id="confirm-cancel">Отмена</button>
+      </div>
+      <small id="confirm-note" class="confirm-note"></small>
+    </div>
+  </div>
+
+  <!-- ============================================================ results -->
+  <div id="gameover" class="screen hidden">
+    <div class="panel modal results-panel">
+      <div class="lu-title" id="go-title">Забег окончен</div>
+      <div id="go-stats"></div>
+      <div id="go-record"></div>
+      <div class="menu">
+        <button class="btn btn-yellow hidden" id="double-ad">🎬 Удвоить монеты</button>
+        <button class="btn btn-green" id="restartbtn">В меню</button>
+      </div>
+    </div>
+  </div>
+
+  <button id="dashbtn" class="hidden" aria-label="Рывок"><span>💨</span><small>Рывок</small></button>
+  <script>
+    // Explains a failed start on screen: wrong file opened from disk, no WebGL, or a script error.
+    (function () {
+      function show(msg) {
+        var el = document.getElementById('loading');
+        if (el && !window.__sakuraBooted) { el.textContent = msg; el.classList.add('boot-error'); }
+      }
+      window.__sakuraBootError = show;
+      var FILE_MSG = 'Этот файл не запускается двойным кликом. Открой play\\SakuraRush.html в папке игры.';
+      addEventListener('error', function (e) {
+        if (!e.message) return;
+        show(location.protocol === 'file:' && !window.__sakuraModuleStarted ? FILE_MSG : 'Ошибка запуска: ' + e.message);
+      });
+      addEventListener('unhandledrejection', function (e) { show('Ошибка запуска: ' + ((e.reason && e.reason.message) || e.reason)); });
+      setTimeout(function () {
+        if (window.__sakuraModuleStarted) return;
+        show(location.protocol === 'file:'
+          ? FILE_MSG
+          : 'Скрипт игры не загрузился. Обнови страницу (Ctrl+F5).');
+      }, 4000);
+    })();
+  </script>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

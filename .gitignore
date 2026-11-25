@@ -1,0 +1,33 @@
+node_modules
+dist
+
+# Dependencies
+node_modules/
+.venv/
+venv/
+__pycache__/
+
+# Temporary files
+/tmp/
+/output/
+.cache/
+
+# Build
+dist/
+build/
+.next/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+/tmp/
+/output/
+node_modules/
+.env
+.env.*
+!.env.example

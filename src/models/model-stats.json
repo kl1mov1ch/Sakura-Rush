@@ -1,0 +1,92 @@
+{
+  "hero": {
+    "triangles": 7712,
+    "bytes": 436644,
+    "joints": 15,
+    "animationClips": 9
+  },
+  "ashigaru": {
+    "triangles": 1810,
+    "bytes": 70996
+  },
+  "bat": {
+    "triangles": 876,
+    "bytes": 26400
+  },
+  "yurei": {
+    "triangles": 1026,
+    "bytes": 32780
+  },
+  "oni": {
+    "triangles": 3148,
+    "bytes": 81804
+  },
+  "oni_lord": {
+    "triangles": 5396,
+    "bytes": 187396
+  },
+  "gem": {
+    "triangles": 280,
+    "bytes": 6588
+  },
+  "shuriken": {
+    "triangles": 144,
+    "bytes": 9460
+  },
+  "chest": {
+    "triangles": 424,
+    "bytes": 26752
+  },
+  "onigiri": {
+    "triangles": 84,
+    "bytes": 4652
+  },
+  "ofuda": {
+    "triangles": 108,
+    "bytes": 8324
+  },
+  "bomb": {
+    "triangles": 516,
+    "bytes": 12232
+  },
+  "scroll": {
+    "triangles": 208,
+    "bytes": 6644
+  },
+  "tree": {
+    "triangles": 764,
+    "bytes": 58224
+  },
+  "rock": {
+    "triangles": 120,
+    "bytes": 11192
+  },
+  "grass": {
+    "triangles": 270,
+    "bytes": 18880
+  },
+  "torii": {
+    "triangles": 472,
+    "bytes": 26380
+  },
+  "lantern": {
+    "triangles": 228,
+    "bytes": 15048
+  },
+  "banner": {
+    "triangles": 184,
+    "bytes": 11804
+  },
+  "bow": {
+    "triangles": 292,
+    "bytes": 10472
+  },
+  "staff": {
+    "triangles": 1172,
+    "bytes": 28360
+  },
+  "arrow": {
+    "triangles": 54,
+    "bytes": 5680
+  }
+}

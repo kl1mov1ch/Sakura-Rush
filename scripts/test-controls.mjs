@@ -1,0 +1,58 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import * as THREE from 'three';
+import { Input } from '../src/input.js';
+import { loadHeroAssets } from './hero-assets.mjs';
+
+const handlers = new Map();
+globalThis.addEventListener = (name, handler) => { if (!handlers.has(name)) handlers.set(name, []); handlers.get(name).push(handler); };
+globalThis.matchMedia = () => ({ matches: false });
+const classes = () => { const set = new Set(); return { add: (...names) => names.forEach(name => set.add(name)), remove: (...names) => names.forEach(name => set.delete(name)), toggle: (name, enabled) => enabled ? set.add(name) : set.delete(name), contains: name => set.has(name) }; };
+const element = () => ({ style: { setProperty() {} }, classList: classes(), setAttribute() {}, firstElementChild: { style: {} }, closest() { return null; } });
+const button = element();
+globalThis.document = { hidden: false, getElementById: () => button, createElement: element, body: { appendChild() {} }, addEventListener: globalThis.addEventListener };
+const emit = (name, values = {}) => { const event = { target: element(), preventDefault() {}, ...values }; for (const fn of handlers.get(name) || []) fn(event); };
+const input = new Input();
+input.setEnabled(true);
+emit('keydown', { code: 'KeyW' }); emit('keydown', { code: 'KeyD' });
+assert.ok(Math.abs(Math.hypot(...input.move()) - 1) < 1e-10, 'Diagonal movement never runs faster');
+emit('keydown', { code: 'Space' }); assert.equal(input.consumeDash(), true);
+emit('keydown', { code: 'Space', repeat: true }); assert.equal(input.consumeDash(), false, 'Held dash cannot auto-repeat');
+emit('blur'); assert.deepEqual(input.move(), [0, 0]);
+assert.equal(input.consumeDash(), false);
+const touchTarget = { ...element(), setPointerCapture() {}, hasPointerCapture: () => false };
+emit('pointerdown', { pointerType: 'touch', pointerId: 11, clientX: 100, clientY: 200, target: touchTarget });
+emit('pointermove', { pointerId: 11, clientX: 152, clientY: 200 });
+assert.deepEqual(input.move(), [1, 0]);
+emit('pointerdown', { pointerType: 'touch', pointerId: 12, target: { closest: query => query === '#dashbtn' ? button : null } });
+assert.equal(input.consumeDash(), true, 'Second touch can dash while steering');
+assert.equal(input.touch.id, 11, 'Dash pointer does not steal movement');
+emit('pointercancel', { pointerId: 11 }); assert.deepEqual(input.move(), [0, 0]);
+emit('keydown', { code: 'KeyW' }); input.setEnabled(false); assert.deepEqual(input.move(), [0, 0]);
+input.setEnabled(true); assert.deepEqual(input.move(), [0, 0], 'Menu transitions clear held movement');
+
+const source = (await readFile(new URL('../src/player.js', import.meta.url), 'utf8'))
+  .replace("from 'three'", `from '${import.meta.resolve('three')}'`)
+  .replace("import { toonify, loadModel } from './assets.js';", 'const toonify = () => []; const loadModel = async () => null;').replace("from 'three/examples/jsm/utils/SkeletonUtils.js'", `from '${import.meta.resolve('three/examples/jsm/utils/SkeletonUtils.js')}'`);
+const { Player } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+const player = new Player(new THREE.Scene(), await loadHeroAssets());
+const stats = { speed: 1, regen: 0 }, particle = { emit() {} }, vfx = { glow: particle, petals: particle, ring() {} };
+let nearest = { id: 1, alive: true, x: 0, z: -3, t: { radius: .4 } };
+const enemies = { nearest: () => nearest };
+player.update(.1, input, stats, vfx, enemies);
+assert.equal(player.aimTarget, nearest);
+assert.ok(Math.abs(Math.abs(player.aimAngle) - Math.PI) < 1e-10, 'Autoaim faces an idle rear threat');
+const old = nearest; nearest = { id: 2, alive: true, x: .1, z: -3, t: { radius: .4 } };
+player.update(.1, input, stats, vfx, enemies);
+assert.equal(player.aimTarget, old, 'Similar-distance threats do not cause target flicker');
+old.id = 10;
+player.update(.1, input, stats, vfx, enemies);
+assert.equal(player.aimTarget, nearest, 'Pooled identity changes invalidate autoaim');
+player.dashBuffer = .1; input.reset();
+player.update(.01, input, stats, vfx, enemies);
+assert.equal(player.dash, 0, 'Reset discards buffered dash across pause/blur');
+nearest.alive = false; nearest = null;
+player.update(.1, input, stats, vfx, enemies);
+assert.equal(player.aimTarget, null);
+assert.equal(player.targetRing.visible, false);
+console.log('Controls regression passed: normalized movement, key repeat, multitouch dash, blur/menu reset, aim hysteresis and pooled target invalidation.');
